@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>GrocerX India</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="menifest.json"/>
+  <meta name="theme-color" content="#2a9d6a"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="GrocerX"/>
+  <link rel="apple-touch-icon" href="images/nav-home.png"/>
+  <meta name="description" content="Your neighbourhood kirana, online ⚡"/>
+  <meta name="application-name" content="GrocerX India"/>
+
+  <link rel="stylesheet" href="grocerx.css"/>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      });
+    }
+  </script>
+
+<style>
+@keyframes micPulse {
+  0%   { transform: scale(1);   opacity: 1; }
+  50%  { transform: scale(1.3); opacity: 0.7; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="h-top">
+    <div class="h-left">
+      <div class="h-sub">GrocerX India</div>
+      <div class="h-title">DELIVER In 10 Minutes</div>
+      <div class="h-addr"><b>Addr. -</b>&nbsp;username.xyz&nbsp;▼</div>
+    
+    </div>
+  </div>
+  <div id="search-bar">
+    <img src="images/search.png" style="width:20px;height:20px;object-fit:contain;">
+    <input id="si" placeholder=" Search Grocery Items...." oninput="handleSearch(this.value)"/>
+    <button id="voice-mic-btn" onclick="startVoiceSearch()" title="Voice Search" style="background:none;border:none;cursor:pointer;padding:4px 6px;display:flex;align-items:center;justify-content:center;transition:color 0.2s;color:#aaa;flex-shrink:0;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V6zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+    </button>
+    <div class="sdiv"></div>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div id="loc-modal" style="display:none;position:fixed;inset:0;z-index:998;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;width:100%;max-width:430px;border-radius:24px 24px 0 0;padding:20px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <span style="font-size:16px;font-weight:900;color:#0d2d1a;">📍 Select Location</span>
+      <button onclick="closeLocationModal()" style="background:none;border:none;font-size:22px;cursor:pointer;">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input id="loc-input" placeholder="Search area, street..." style="flex:1;padding:10px 14px;border:1.5px solid #e0f5f0;border-radius:12px;font-size:13px;font-weight:600;outline:none;font-family:inherit;"/>
+      <button onclick="searchLocation()" style="background:#2a9d6a;color:#fff;border:none;border-radius:12px;padding:10px 16px;font-weight:900;font-size:13px;cursor:pointer;">Go</button>
+    </div>
+    <div id="loc-map" style="border-radius:14px;overflow:hidden;margin-bottom:12px;"></div>
+    <button onclick="confirmLocation()" style="width:100%;background:linear-gradient(135deg,#2a9d6a,#1a7a4a);color:#fff;border:none;border-radius:14px;padding:14px;font-weight:900;font-size:15px;cursor:pointer;">✅ Confirm Location</button>
+  </div>
+</div>
+</div>
+</div>
+
+<div id="main">
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div id="cat-strip"><div class="cs-inner" id="csi"></div></div>
+    <div id="banner-wrap">
+      <div id="banner-slide"></div>
+      <div id="banner-dots"></div>
+    </div>
+    <!-- Best Sellers -->
+    <div class="sec-hdr">
+      <h2>🔥 Best Sellers</h2>
+      <button class="see-all" onclick="selCat('all')">See All</button>
+    </div>
+    <div class="prod-grid" id="pgrid-home"></div>
+    <!-- Category Cards -->
+    <div id="cat-cards">
+      <div class="cr cr1" id="cr1"></div>
+      <div class="cr cr2" id="cr2"></div>
+      <div class="cr cr3" id="cr3"></div>
+      <div class="cr cr4" id="cr4"></div>
+    </div>
+    <!-- Scallop -->
+    <div id="scallop">
+      <svg viewBox="0 0 430 36" preserveAspectRatio="none">
+        <ellipse cx="-2"  cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="41"  cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="84"  cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="127" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="170" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="213" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="256" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="299" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="342" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="385" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+        <ellipse cx="428" cy="36" rx="23" ry="23" fill="#f0faf5"/>
+      </svg>
+      <div id="sf"></div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div id="page-products" class="page">
+    <div id="prod-hdr">
+      <button class="back-btn" onclick="goBack()">← Back</button>
+      <span id="ptitle">Products</span>
+    </div>
+    <div id="fstrip"><div class="fi-inner" id="fsi"></div></div>
+    <div id="pgrid"></div>
+    <div id="nores">
+      <div class="nr-ico">🔍</div>
+      <h3>Kuch nahi mila!</h3>
+    </div>
+  </div>
+
+  <!-- CART -->
+  <div id="page-cart" class="page">
+    <div id="cart-pg">
+      <div class="pg-title">🛒 my Cart</div>
+      <div id="ord-ok"><span class="be">🛵</span><div><b>Order successful 🎉</b><br><small>Order arriving in just 4 minutes ⚡</small></div></div>
+      <div id="c-empty">
+        <div class="ce">🛒</div>
+        <h3>Your cart is empty</h3>
+        <p>Add some items, then place your order.</p>
+        <button onclick="showPage('home')">🛍️ Continue Shopping</button>
+      </div>
+      <div id="citems"></div>
+      <div id="bill" style="display:none">
+        <h3>📋 Bill Summary</h3>
+        <div class="br"><span>Item Total (MRP)</span><span id="bm">₹0</span></div>
+        <div class="br g" id="sr" style="display:none"><span>🎉 Discount</span><span id="bs">-₹0</span></div>
+        <div class="br"><span>Delivery</span><span style="color:#2e7d32;font-weight:800">FREE ✓</span></div>
+        <div class="bdiv"></div>
+        <div class="br tot"><span>Total</span><span id="bt">₹0</span></div>
+      </div>
+      <button id="ord-btn" onclick="placeOrder()">🛵 place order </button>
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div id="page-categories" class="page">
+    <div id="cats-pg">
+      <div class="pg-title" style="padding:16px 0 8px">📦 All Categories</div>
+      <div id="cats-grid"></div>
+    </div>
+  </div>
+
+  <!-- PRINT -->
+  <div id="page-print" class="page">
+    <div id="print-pg">
+      <div class="pg-title" style="padding:16px 14px 4px;">🖨️ Print Services</div>
+      <div style="padding:0 14px 100px;">
+
+        <!-- UPLOAD ZONE -->
+        <div id="print-upload-zone" onclick="document.getElementById('print-file-input').click()">
+          <div class="puz-icon">📁</div>
+          <div class="puz-title">Upload File to Print</div>
+          <div class="puz-sub">JPG, PNG, PDF supported · Tap to select</div>
+          <input type="file" id="print-file-input" accept="image/*,.pdf" style="display:none" onchange="handlePrintFile(this)"/>
+        </div>
+
+        <!-- PREVIEW (hidden until file selected) -->
+        <div id="print-preview-wrap" style="display:none;">
+          <div class="print-preview-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <span style="font-size:13px;font-weight:800;color:#0d2d1a;">📄 Preview</span>
+              <button onclick="resetPrintFile()" style="background:#fee;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:800;color:#e53935;cursor:pointer;">✕ Remove</button>
+            </div>
+            <img id="print-img-preview" src="" alt="" style="width:100%;border-radius:10px;max-height:280px;object-fit:contain;background:#f5f5f5;display:none;"/>
+            <div id="print-pdf-preview" style="display:none;background:#f5f5f5;border-radius:10px;padding:30px;text-align:center;">
+              <div style="font-size:48px;margin-bottom:8px;">📄</div>
+              <div id="print-pdf-name" style="font-size:13px;font-weight:800;color:#333;"></div>
+            </div>
+          </div>
+
+          <!-- OPTIONS -->
+          <div class="print-section-title">🎨 Color Mode</div>
+          <div class="print-options-row">
+            <div class="print-opt active-popt" id="popt-bw" onclick="selectPrintOpt('color','bw',this)">
+              <div class="print-opt-icon">⬛</div>
+              <div class="print-opt-label">Black & White</div>
+              <div class="print-opt-price">₹2/page</div>
+            </div>
+            <div class="print-opt" id="popt-color" onclick="selectPrintOpt('color','color',this)">
+              <div class="print-opt-icon">🌈</div>
+              <div class="print-opt-label">Full Color</div>
+              <div class="print-opt-price">₹10/page</div>
+            </div>
+          </div>
+
+          <div class="print-section-title">📐 Paper Size</div>
+          <div class="print-options-row">
+            <div class="print-opt active-popt" id="popt-a4" onclick="selectPrintOpt('size','a4',this)">
+              <div class="print-opt-icon">📄</div>
+              <div class="print-opt-label">A4</div>
+              <div class="print-opt-price">Standard</div>
+            </div>
+            <div class="print-opt" id="popt-a3" onclick="selectPrintOpt('size','a3',this)">
+              <div class="print-opt-icon">🗞️</div>
+              <div class="print-opt-label">A3</div>
+              <div class="print-opt-price">+₹5 extra</div>
+            </div>
+            <div class="print-opt" id="popt-a5" onclick="selectPrintOpt('size','a5',this)">
+              <div class="print-opt-icon">🗒️</div>
+              <div class="print-opt-label">A5</div>
+              <div class="print-opt-price">Half A4</div>
+            </div>
+          </div>
+
+          <div class="print-section-title">🔢 Copies</div>
+          <div style="display:flex;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+            <button class="print-qty-btn" onclick="changePrintQty(-1)">−</button>
+            <span id="print-qty-val" style="font-size:22px;font-weight:900;color:#0d2d1a;flex:1;text-align:center;">1</span>
+            <button class="print-qty-btn" onclick="changePrintQty(1)">+</button>
+          </div>
+
+          <div class="print-section-title">✨ Extras</div>
+          <div class="print-toggle-row">
+            <div><b style="font-size:14px;color:#0d2d1a;">Both Sides (Duplex)</b><br><small style="color:#aaa;font-size:11px;">Print on front & back</small></div>
+            <div class="toggle-switch" id="toggle-duplex" onclick="toggleSetting(this)"><div class="toggle-knob"></div></div>
+          </div>
+          <div class="print-toggle-row">
+            <div><b style="font-size:14px;color:#0d2d1a;">Spiral Binding</b><br><small style="color:#aaa;font-size:11px;">+₹30 per set</small></div>
+            <div class="toggle-switch" id="toggle-binding" onclick="toggleSetting(this);updatePrintPrice()"><div class="toggle-knob"></div></div>
+          </div>
+
+          <!-- PRICE SUMMARY -->
+          <div class="print-price-box">
+            <div class="print-price-row"><span>Color Mode</span><span id="pp-color">B&W</span></div>
+            <div class="print-price-row"><span>Paper Size</span><span id="pp-size">A4</span></div>
+            <div class="print-price-row"><span>Copies</span><span id="pp-copies">1</span></div>
+            <div class="print-price-row" id="pp-spiral-row" style="display:none;color:#2a9d6a;"><span>🌀 Spiral Binding</span><span>+₹30</span></div>
+            <div style="height:1px;background:#e8f5ee;margin:10px 0;"></div>
+            <div class="print-price-row" style="font-size:16px;font-weight:900;color:#0d2d1a;"><span>Total</span><span id="pp-total">₹2</span></div>
+          </div>
+
+          <button class="print-order-btn" onclick="placePrintOrder()">🖨️ Place Print Order</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="page-profile" class="page">
+    <div id="prof-pg">
+      <div class="pg-title" style="padding:16px 0 12px">👤 My Profile</div>
+      <div class="pcard">
+        <div class="pav">👤</div>
+        <div>
+          <div class="pn2">username.xyz</div>
+          <div class="pph"></div>
+          <div class="ppb"> I'm a GOOD friend of the CEO 🐸🚀</div>
+        </div>
+      </div>
+      <div class="pitem" onclick="openOrdersSheet()"><span class="pio">📦</span><div class="pt"><b>Orders Details</b><small id="orders-small">No orders yet</small></div><span class="par">›</span></div>
+      <div class="pitem" onclick="openAddressSheet()"><span class="pio">📍</span><div class="pt"><b>Address</b><small id="prof-addr-small">Karawal Nagar, Delhi</small></div><span class="par">›</span></div>
+      <div class="pitem" onclick="openSheet('payment')"><span class="pio">💳</span><div class="pt"><b>Payment Methods</b><small>UPI · Card · COD</small></div><span class="par">›</span></div>
+      <div class="pitem" onclick="openSheet('offers')"><span class="pio">🎁</span><div class="pt"><b>Offers &amp; Coupons</b><small>GROX30 — 30% off!</small></div><span class="par">›</span></div>
+      <div class="pitem" onclick="openSheet('settings')"><span class="pio">⚙️</span><div class="pt"><b>Settings</b><small>App preferences</small></div><span class="par">›</span></div>
+      <div class="pitem" onclick="openSheet('help')"><span class="pio">📞</span><div class="pt"><b>Help &amp; Support</b><small>24×7 available</small></div><span class="par">›</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CART PILL -->
+<div id="cpill">
+  <button onclick="showPage('cart')">
+    <div class="pleft"><span class="pcnt" id="pcnt">0</span><span id="ptxt">0 items</span></div>
+    <span id="ppr">₹0 →</span>
+  </button>
+</div>
+
+<!-- BOTTOM NAV:  | CART | GROCERX(center) | CATEGORIES | PRINT -->
+<div id="bnav">
+  <button class="nb" id="nb-cart" onclick="showPage('cart')">
+    <span class="ni"><img src="images/nav-cart.png" style="width:35px;height:30px;object-fit:contain;"><span class="nbadge" id="cbadge">0</span></span>
+    <span class="nl">CART</span>
+  </button>
+
+  <button class="nb" id="nb-print" onclick="showPage('print')">
+    <span class="ni"><img src="images/nav-print.png" style="width:35px;height:30px;object-fit:contain;"></span>
+    <span class="nl">PRINT</span>
+  </button>
+
+  <button class="nb" id="nb-grocerx" onclick="showPage('home')">
+    <div id="hbw"><img src="images/nav-home.png" style="width:45px;height:45px;object-fit:contain;"></div>
+    <span class="nl" style="font-weight:900;color:#2a9d6a;font-size:14px">HOME</span>
+  </button>
+
+  <button class="nb" id="nb-categories" onclick="showPage('categories')">
+    <span class="ni"><img src="images/nav-categories.png" style="width:35px;height:30px;object-fit:contain;"></span>
+    <span class="nl">CATEGORIES</span>
+  </button>
+
+  <button class="nb" id="nb-profile" onclick="showPage('profile')">
+    <span class="ni"><img src="images/nav-profile.png" style="width:35px;height:30px;object-fit:contain;"></span>
+    <span class="nl">PROFILE</span>
+  </button>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;width:100%;max-width:430px;border-radius:28px 28px 0 0;padding:28px 22px 40px;position:relative;">
+    <div style="width:40px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto 22px;"></div>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:38px;margin-bottom:8px;">🛒</div>
+      <div style="font-size:20px;font-weight:900;color:#0d2d1a;">Welcome to GrocerX</div>
+      <div style="font-size:13px;color:#888;font-weight:600;margin-top:4px;">Login to save cart, orders &amp; address</div>
+    </div>
+    <button onclick="signInWithGoogle()" style="width:100%;background:#fff;border:2px solid #e0e0e0;border-radius:14px;padding:14px;font-size:15px;font-weight:800;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.5 33.1 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.3-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.8 18.9 12 24 12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.5 26.9 36 24 36c-5.1 0-9.4-2.9-11.3-7.1l-6.6 4.9C9.8 39.6 16.5 44 24 44z"/><path fill="#1565C0" d="M43.6 20H24v8h11.3c-.9 2.5-2.7 4.6-5 6l6.2 5.2C40.4 35.5 44 30.1 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      Continue with Google
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="flex:1;height:1px;background:#eee;"></div>
+      <span style="font-size:12px;color:#bbb;font-weight:700;">OR</span>
+      <div style="flex:1;height:1px;background:#eee;"></div>
+    </div>
+    <div id="auth-email-step1">
+      <input id="auth-email-input" type="email" placeholder="Enter your email" style="width:100%;border:2px solid #e0f5f0;border-radius:14px;padding:14px 16px;font-size:15px;font-weight:700;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:12px;"/>
+      <button onclick="sendMagicLink()" style="width:100%;background:linear-gradient(135deg,#2a9d6a,#1a7a4a);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:900;cursor:pointer;">Send Magic Link ✉️</button>
+    </div>
+    <div id="auth-email-step2" style="display:none;text-align:center;">
+      <div style="font-size:40px;margin-bottom:12px;">📬</div>
+      <div style="font-size:16px;font-weight:900;color:#0d2d1a;">Check your email!</div>
+      <div style="font-size:13px;color:#888;font-weight:600;margin-top:6px;">Magic link bheja hai — click karke login ho jaao</div>
+      <button onclick="document.getElementById('auth-email-step2').style.display='none';document.getElementById('auth-email-step1').style.display='block';" style="margin-top:18px;background:#f0faf5;color:#2a9d6a;border:2px solid #2a9d6a;border-radius:12px;padding:10px 20px;font-weight:800;cursor:pointer;">← Back</button>
+    </div>
+    <button onclick="closeAuthModal()" style="width:100%;background:none;border:none;color:#aaa;font-size:13px;font-weight:700;cursor:pointer;margin-top:16px;">Skip for now</button>
+  </div>
+</div>
+
+<script src="grocerx.js"></script>
+<style>
+  @keyframes popIn{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+  </style> 
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- ADDRESS MODAL -->
+<div id="loc-modal" style="display:none;position:fixed;inset:0;z-index:997;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center;">
+  <div style="background:#f5f5f5;width:100%;max-width:430px;border-radius:24px 24px 0 0;padding:20px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:17px;font-weight:900;color:#0d2d1a;">Select delivery location</span>
+      <button onclick="closeLocModal()" style="background:#eee;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <!-- Search -->
+    <div style="background:#fff;border-radius:14px;display:flex;align-items:center;padding:12px 16px;gap:10px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+      <span style="font-size:18px;">🔍</span>
+      <input id="loc-search" placeholder="Search for area, street name..." style="border:none;outline:none;font-size:14px;font-weight:600;width:100%;font-family:inherit;background:transparent;"/>
+    </div>
+    <!-- Use current location -->
+    <div onclick="useCurrentLocation()" style="background:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+      <span style="font-size:22px;color:#2a9d6a;">📍</span>
+      <div>
+        <div style="font-size:14px;font-weight:900;color:#2a9d6a;">Use current location</div>
+        <div style="font-size:12px;color:#888;font-weight:600;margin-top:2px;">Enable GPS to detect</div>
+      </div>
+      <span style="margin-left:auto;color:#ccc;font-size:18px;">›</span>
+    </div>
+    <!-- Add new address -->
+    <div onclick="openMapScreen()" style="background:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:16px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+      <span style="font-size:22px;color:#2a9d6a;">➕</span>
+      <div style="font-size:14px;font-weight:900;color:#2a9d6a;">Add new address</div>
+      <span style="margin-left:auto;color:#ccc;font-size:18px;">›</span>
+    </div>
+    <!-- Saved addresses -->
+    <div style="font-size:12px;font-weight:800;color:#999;letter-spacing:.5px;margin-bottom:10px;">YOUR SAVED ADDRESSES</div>
+    <div onclick="setAddress('Karawal Nagar, New Delhi');closeLocModal();" style="background:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+      <div style="width:42px;height:42px;background:#fff8e1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;">🏠</div>
+      <div>
+        <div style="font-size:14px;font-weight:900;color:#0d2d1a;">Home</div>
+        <div style="font-size:12px;color:#888;font-weight:600;margin-top:2px;">Karawal Nagar, New Delhi</div>
+      </div>
+      <span style="margin-left:auto;color:#ccc;font-size:18px;">›</span>
+    </div>
+    <div onclick="setAddress('NCC Bhawan, Badli, New Delhi');closeLocModal();" style="background:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+      <div style="width:42px;height:42px;background:#e8f5e9;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;">🏢</div>
+      <div>
+        <div style="font-size:14px;font-weight:900;color:#0d2d1a;">Work</div>
+        <div style="font-size:12px;color:#888;font-weight:600;margin-top:2px;">NCC Bhawan, Badli, New Delhi</div>
+      </div>
+      <span style="margin-left:auto;color:#ccc;font-size:18px;">›</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAP MODAL -->
+<div id="map-modal" style="display:none;position:fixed;inset:0;z-index:998;background:#fff;flex-direction:column;">
+  <!-- Top bar -->
+  <div style="background:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);position:relative;z-index:2;">
+    <button onclick="closeMapModal()" style="background:#f0f0f0;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">←</button>
+    <span style="font-size:16px;font-weight:900;color:#0d2d1a;">Confirm location</span>
+  </div>
+  <!-- Search -->
+  <div style="padding:10px 14px;background:#fff;z-index:2;">
+    <div style="background:#f5f5f5;border-radius:14px;display:flex;align-items:center;padding:11px 14px;gap:10px;">
+      <span>🔍</span>
+      <input id="map-search-input" placeholder="Search for a new area, locality..." style="border:none;outline:none;font-size:13px;font-weight:600;width:100%;font-family:inherit;background:transparent;" onkeydown="if(event.key==='Enter')searchMapLocation()"/>
+    </div>
+  </div>
+  <!-- Map -->
+  <div id="loc-map" style="flex:1;width:100%;"></div>
+  <!-- Bottom confirm -->
+  <div style="background:#fff;padding:16px;box-shadow:0 -4px 16px rgba(0,0,0,0.1);">
+    <div style="font-size:13px;font-weight:800;color:#555;margin-bottom:6px;">Delivering your order to</div>
+    <div style="background:#f8f8f8;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <span style="font-size:22px;">📍</span>
+      <div id="map-addr-text" style="font-size:13px;font-weight:700;color:#0d2d1a;flex:1;">Detecting location...</div>
+      <span style="font-size:12px;font-weight:800;color:#2a9d6a;cursor:pointer;">Change</span>
+    </div>
+    <button onclick="confirmMapLocation()" style="width:100%;background:#2a9d6a;color:#fff;border:none;border-radius:14px;padding:16px;font-weight:900;font-size:15px;cursor:pointer;">Confirm Location ▶</button>
+  </div>
+</div>
+  
+  <!-- SHEET BACKDROP -->
+  <div id="sheet-backdrop" onclick="closeAllSheets()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);"></div>
+
+  <!-- ORDERS SHEET -->
+  <div id="sheet-orders" class="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title">📦 My Orders</span>
+      <button class="bs-close" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div id="orders-list" class="orders-list"></div>
+  </div>
+
+  <!-- ADDRESS SHEET -->
+  <div id="sheet-address" class="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title">📍 Edit Address</span>
+      <button class="bs-close" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div class="addr-field-group">
+        <label class="addr-label">Full Name</label>
+        <input class="addr-input" id="addr-name" placeholder="Username.xyz" value="Username.xyz"/>
+      </div>
+      <div class="addr-field-group">
+        <label class="addr-label">Phone Number</label>
+        <input class="addr-input" id="addr-phone" placeholder="+91 " value="+91 " type="tel"/>
+      </div>
+      <div class="addr-field-group">
+        <label class="addr-label">House / Flat No.</label>
+        <input class="addr-input" id="addr-house" placeholder="e.g. A-102, Floor 3"/>
+      </div>
+      <div class="addr-field-group">
+        <label class="addr-label">Locality / Area</label>
+        <input class="addr-input" id="addr-area" placeholder="e.g. Karawal Nagar" value="Karawal Nagar"/>
+      </div>
+      <div class="addr-field-group">
+        <label class="addr-label">City</label>
+        <input class="addr-input" id="addr-city" placeholder="e.g. New Delhi" value="New Delhi"/>
+      </div>
+      <div class="addr-field-group">
+        <label class="addr-label">Pincode</label>
+        <input class="addr-input" id="addr-pin" placeholder="110094" type="number" maxlength="6"/>
+      </div>
+      <button class="addr-save-btn" onclick="saveAddress()">✅ Save Address</button>
+    </div>
+  </div>
+
+  <!-- PAYMENT SHEET -->
+  <div id="sheet-payment" class="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title">💳 Payment Methods</span>
+      <button class="bs-close" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div style="padding:0 16px 20px;">
+      <div class="pay-option active-pay">
+        <div class="pay-icon">📱</div>
+        <div class="pay-info"><b>UPI</b><small>PhonePe · GPay · Paytm</small></div>
+        <div class="pay-check">✓</div>
+      </div>
+      <div class="pay-option">
+        <div class="pay-icon">💰</div>
+        <div class="pay-info"><b>Pay Later</b><small>No Hidden Charge · 50rs Activation </small></div>
+        <div class="pay-check"></div>
+      </div>
+      <div class="pay-option">
+        <div class="pay-icon">💵</div>
+        <div class="pay-info"><b>Cash on Delivery</b><small>Pay when delivered</small></div>
+        <div class="pay-check"></div>
+      </div>
+      <div class="pay-option">
+        <div class="pay-icon"></div>
+        <div class="pay-info"><b></b><small></small></div>
+        <div class="pay-check"></div>
+      </div>
+      <p style="font-size:11px;color:#aaa;font-weight:600;text-align:center;margin-top:14px;">🔒 100% Fair Prices, No Hidden Charges</p>
+    </div>
+  </div>
+
+  <!-- OFFERS SHEET -->
+  <div id="sheet-offers" class="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title">🎁 Offers & Coupons</span>
+      <button class="bs-close" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div style="padding:0 16px 20px;">
+      <div class="coupon-card">
+        <div class="coupon-left">
+          <div class="coupon-code">GROX30</div>
+          <div class="coupon-desc">30% OFF on first 3 orders</div>
+        </div>
+        <button class="coupon-copy" onclick="copyCoupon('GROX30')">Copy</button>
+      </div>
+      <div class="coupon-card">
+        <div class="coupon-left">
+          <div class="coupon-code">FREEDEL</div>
+          <div class="coupon-desc">Free delivery above ₹99</div>
+        </div>
+        <button class="coupon-copy" onclick="copyCoupon('FREEDEL')">Copy</button>
+      </div>
+      <div class="coupon-card">
+        <div class="coupon-left">
+          <div class="coupon-code">NEWUSER</div>
+          <div class="coupon-desc">₹50 OFF on first order</div>
+        </div>
+        <button class="coupon-copy" onclick="copyCoupon('NEWUSER')">Copy</button>
+      </div>
+      <div class="coupon-card">
+        <div class="coupon-left">
+          <div class="coupon-code">FLASH20</div>
+          <div class="coupon-desc">20% OFF — Today only ⚡</div>
+        </div>
+        <button class="coupon-copy" onclick="copyCoupon('FLASH20')">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS SHEET -->
+  <div id="sheet-settings" class="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title">⚙️ Settings</span>
+      <button class="bs-close" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div style="padding:0 16px 20px;">
+      <div class="setting-row">
+        <div class="setting-info"><b>Notifications</b><small>Order updates & offers</small></div>
+        <div class="toggle-switch active-toggle" id="toggle-notif" onclick="toggleSetting(this)"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><b>Express Delivery Alerts</b><small>Get notified when rider is near</small></div>
+        <div class="toggle-switch active-toggle" id="toggle-delivery" onclick="toggleSetting(this)"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><b>Offers & Deals</b><small>Exclusive coupons & flash sales</small></div>
+        <div class="toggle-switch" id="toggle-offers" onclick="toggleSetting(this)"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info"><b>Dark Mode</b><small>Coming soon 🌙</small></div>
+        <div class="toggle-switch" style="opacity:0.4;pointer-events:none;"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="setting-divider"></div>
+      <div class="setting-row" style="cursor:pointer;">
+        <div class="setting-info"><b>Language</b><small>English</small></div>
+        <span style="color:#2a9d6a;font-weight:800;font-size:13px;">›</span>
+      </div>
+      <div class="setting-row" style="cursor:pointer;" onclick="signOut()">
+        <div class="setting-info" style="color:#e53935;"><b style="color:#e53935;">Logout</b><small>Sign out of GrocerX</small></div>
+        <span style="color:#e53935;font-size:18px;">→</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HELP SHEET -->
+  <div id="sheet-help" class="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title">📞 Help & Support</span>
+      <button class="bs-close" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div style="padding:0 16px 20px;">
+      <div class="help-card" onclick="">
+        <div class="help-icon">💬</div>
+        <div class="help-info"><b>Live Chat</b><small></small></div>
+        <span class="help-arrow">›</span>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">📞</div>
+        <div class="help-info"><b>Call Us</b><small>+91 9354406279</small></div>
+        <span class="help-arrow">›</span>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">📧</div>
+        <div class="help-info"><b>Email Support</b><small>grocerxindiacustomercare@gmail.com</small></div>
+        <span class="help-arrow">›</span>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">❓</div>
+        <div class="help-info"><b>FAQs</b><small>Common questions answered</small></div>
+        <span class="help-arrow">›</span>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">🐛</div>
+        <div class="help-info"><b>Report a Problem</b><small>Help us improve GrocerX</small></div>
+        <span class="help-arrow">›</span>
+      </div>
+      <p style="text-align:center;margin-top:16px;font-size:12px;color:#aaa;font-weight:600;">GrocerX India · Made with ❤️</p>
+    </div>
+  </div>
+
+  <!-- LOOSE VARIANT PICKER MODAL -->
+  <!-- CUSTOM WEIGHT MODAL -->
+  <div id="cw-modal" style="display:none;position:fixed;inset:0;z-index:996;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);align-items:center;justify-content:center;" onclick="closeCW()">
+    <div class="cw-box" onclick="event.stopPropagation()">
+      <div class="cw-top">
+        <img id="cw-img" src="" class="cw-prod-img" onerror="this.style.display='none'"/>
+        <div class="cw-info">
+          <div id="cw-name" class="cw-name"></div>
+          <div id="cw-brand" class="cw-brand"></div>
+          <div class="cw-rate-badge"><span id="cw-rate"></span></div>
+        </div>
+        <button class="cw-x" onclick="closeCW()">✕</button>
+      </div>
+      <div class="cw-body">
+        <div class="cw-label">Weight kitna chahiye?</div>
+        <div class="cw-row">
+          <input id="cw-input" type="number" class="cw-weight-input" placeholder="0" min="0" step="any" oninput="cwCalc()" onkeydown="if(event.key==='Enter')cwAddToCart()"/>
+          <div class="cw-units">
+            <button class="cw-unit-btn active" data-unit="kg" onclick="cwSetUnit('kg')">kg</button>
+            <button class="cw-unit-btn" data-unit="g" onclick="cwSetUnit('g')">g</button>
+          </div>
+        </div>
+        <div class="cw-total-row">
+          <span class="cw-total-label">Total:</span>
+          <span id="cw-total" class="cw-total-val">₹0</span>
+        </div>
+        <button id="cw-confirm" class="cw-confirm-btn" onclick="cwAddToCart()" disabled>ADD TO CART</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN OVERLAY -->
+  <!-- COUNTING OVERLAY -->
+  <div id="countdown-overlay" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;flex-direction:column;">
+    <canvas id="confetti-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+    <div class="cd-counting" style="display:flex;flex-direction:column;align-items:center;gap:16px;position:relative;z-index:2;width:90vw;max-width:300px;">
+      <div style="background:#fff;border-radius:28px;padding:28px 24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;">
+        <div style="font-size:13px;font-weight:800;color:#2a9d6a;letter-spacing:1px;margin-bottom:6px;">ORDER PLACED ✅</div>
+        <div style="font-size:15px;font-weight:700;color:#555;margin-bottom:20px;">Your rider is on the way!</div>
+        <div style="position:relative;width:140px;height:140px;margin:0 auto 16px;">
+          <svg width="140" height="140" style="transform:rotate(-90deg)">
+            <circle cx="70" cy="70" r="54" fill="none" stroke="#e8f5ee" stroke-width="10"/>
+            <circle class="cd-ring-fill" cx="70" cy="70" r="54" fill="none" stroke="#2a9d6a" stroke-width="10" stroke-linecap="round" style="transition:stroke-dashoffset 1s linear;"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="cd-rider" style="font-size:36px;transition:transform .4s ease;">🛵</div>
+            <div class="cd-time" style="font-size:26px;font-weight:900;color:#0d2d1a;line-height:1;">00:00</div>
+          </div>
+        </div>
+        <div style="font-size:14px;font-weight:700;color:#333;">Arriving in <span class="cd-mins" style="color:#2a9d6a;font-size:22px;font-weight:900;">4</span> min</div>
+        <div id="cd-status-msg" style="margin-top:8px;font-size:12px;color:#2a9d6a;font-weight:700;">⏳ Order confirm ho raha hai...</div>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- DELIVERED OVERLAY — completely separate, always visible when shown -->
+  <div id="delivered-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);">
+    <canvas id="confetti-canvas2" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></canvas>
+    <div style="position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding-top:80px;padding-bottom:40px;overflow-y:auto;">
+      <div style="background:#fff;border-radius:28px;padding:28px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.35);width:86vw;max-width:310px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards;position:relative;z-index:2;">
+        <div style="font-size:52px;margin-bottom:10px;animation:floatEmoji 1.5s ease-in-out infinite;">🎉</div>
+        <div style="font-size:20px;font-weight:900;color:#0d2d1a;margin-bottom:5px;">Order Delivered!</div>
+        <div style="font-size:13px;color:#777;font-weight:600;margin-bottom:22px;">Enjoy your goodies! 😊</div>
+        <button onclick="closeDelivered()" style="width:100%;background:linear-gradient(135deg,#2a9d6a,#1a7a4a);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 5px 18px rgba(42,157,106,.4);margin-bottom:12px;display:block;">🏠 Back to Home</button>
+        <button onclick="closeDelivered();showPage('products')" style="width:100%;background:#f0faf5;color:#2a9d6a;border:2.5px solid #2a9d6a;border-radius:14px;padding:14px;font-size:14px;font-weight:900;cursor:pointer;display:block;">🛍️ Continue Shopping</button>
+      </div>
+    </div>
+  </div>
+  <!-- CANCELLED OVERLAY -->
+  <div id="cancelled-overlay" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px);">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:28px;padding:32px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.35);width:86vw;max-width:310px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards;">
+        <div style="font-size:56px;margin-bottom:12px;">😞</div>
+        <div style="font-size:21px;font-weight:900;color:#e53935;margin-bottom:6px;">Order Cancelled</div>
+        <div style="font-size:13px;color:#777;font-weight:600;margin-bottom:24px;">Seller ne order cancel kar diya. Koi baat nahi, dobara try karo! 🛒</div>
+        <button onclick="closeCancelledOverlay()" style="width:100%;background:linear-gradient(135deg,#2a9d6a,#1a7a4a);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 5px 18px rgba(42,157,106,.4);margin-bottom:12px;display:block;">🏠 Back to Home</button>
+        <button onclick="closeCancelledOverlay();showPage('products')" style="width:100%;background:#fff5f5;color:#e53935;border:2.5px solid #e53935;border-radius:14px;padding:14px;font-size:14px;font-weight:900;cursor:pointer;display:block;">🛍️ Continue Shopping</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDER STATUS LIVE OVERLAY -->
+  <div id="order-status-overlay" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:28px;padding:32px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.35);width:90vw;max-width:320px;">
+      <div id="os-icon" style="font-size:60px;margin-bottom:12px;line-height:1;">📦</div>
+      <div id="os-title" style="font-size:20px;font-weight:900;color:#0d2d1a;margin-bottom:8px;">Order Update</div>
+      <div id="os-sub" style="font-size:13px;color:#666;font-weight:600;margin-bottom:20px;line-height:1.5;"></div>
+      <!-- Steps -->
+      <div id="os-steps" style="text-align:left;background:#f8f8f8;border-radius:14px;padding:12px 16px;margin-bottom:20px;"></div>
+      <button id="os-btn" onclick="closeOrderStatusOverlay()" style="display:none;width:100%;background:linear-gradient(135deg,#2a9d6a,#1a7a4a);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 5px 18px rgba(42,157,106,.4);">Back to Home</button>
+    </div>
+  </div>
+</body>
+</html>
